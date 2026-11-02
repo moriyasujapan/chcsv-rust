@@ -12,10 +12,12 @@ on:
 jobs:
   linux-x86_64:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # リリースアセットの添付/更新に必要
     # rockylinux:8 コンテナでビルドして glibc 2.28 下限を維持（= 全 RHEL/OL 8+ 互換）
     container: rockylinux:8
     steps:
-      - run: dnf -y install git gcc make curl tar gzip which unzip zip
+      - run: dnf -y install git gcc make curl tar gzip which unzip zip jq
 
       - uses: actions/checkout@v4
 
@@ -39,7 +41,7 @@ jobs:
           if [ -z "$TAG" ]; then
             TAG=$(curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
               "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | \
-              grep -m1 '"tag_name"' | cut -d'"' -f4)
+              jq -r .tag_name)
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
         env:

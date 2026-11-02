@@ -1,0 +1,16 @@
+# build output
+/target
+
+# third-party sources fetched by ./setup.sh
+/vendor
+
+# Oracle proprietary artifacts (proprietary license — never committed)
+/instantclient*
+/upstream
+
+# local tooling / scratch
+/.cargo-home
+/chcsv
+.pull.log
+*.log
+/META-INF/

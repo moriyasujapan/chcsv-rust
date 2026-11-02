@@ -1,0 +1,14 @@
+[package]
+name = "chcsv"
+version = "2.1.0"
+edition = "2021"
+description = "Execute SQL against Oracle and dump SELECT results as CSV (Rust port of the classic Pro*C chcsv)"
+license = "GPL-2.0-or-later"
+
+[build-dependencies]
+cc = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"

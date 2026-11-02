@@ -1,0 +1,38 @@
+# chcsv × Oracle 検証用 compose
+#
+# 1発E2E:
+#   docker compose --profile demo run --rm -T chcsv \
+#       demo/demo123@oracle:1521/XEPDB1 -h <<< "SELECT 3 AS N FROM DUAL"
+#   → N列のCSVがstdoutに出る
+#
+# Oracleだけ起動してhostから触る場合（1522にマッピング）:
+#   docker compose --profile demo up -d oracle
+#   sqlplus demo/demo123@//localhost:1522/XEPDB1
+#
+# 既存DBに接続するだけで使う場合（oracleを起動しない）:
+#   echo "select ..." | docker compose run --rm -T chcsv user/pass@host:1521/SVC -h > out.csv
+
+services:
+  oracle:
+    image: gvenzl/oracle-xe:21-slim
+    profiles: [demo]
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-Oracle_demo123}
+      APP_USER: demo
+      APP_USER_PASSWORD: ${DEMO_PASSWORD:-demo123}
+    ports:
+      - "1522:1521"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 120
+      start_period: 30s
+
+  chcsv:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    depends_on:
+      oracle:
+        condition: service_healthy

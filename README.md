@@ -66,6 +66,32 @@ $ ./chcsv-linux-x86_64 user/pass@host:1521/SERVICE -h < query.sql
 
 Instant Client（basic または basic-lite ZIP）は別途 Oracle から入手してください。
 
+### Docker / docker compose で使う
+
+Instant Client を同梱したイメージをビルドする `docker/Dockerfile` と、
+Oracle XE を立ててそのまま試せる `compose.yaml` を同梱しています。
+
+```console
+# イメージを作る（rockylinux:8 でビルド → OL8 + Instant Client のランタイム）
+$ docker build -f docker/Dockerfile -t chcsv .
+
+# 既存DBへ接続だけする（Oracle は起動しない）
+$ echo "select id, name from emp" | docker compose run --rm -T chcsv user/pass@host:1521/SERVICE -h > out.csv
+
+# Oracle XE 21 込みで丸ごと試す（demo ユーザ自動作成、host側は 1522 ポート）
+$ docker compose --profile demo up -d oracle      # 起動に1〜2分
+$ echo "select 3 as n from dual" | docker compose --profile demo run --rm -T chcsv demo/demo123@oracle:1521/XEPDB1 -h
+N
+3
+$ docker compose --profile demo down
+```
+
+`docker/Dockerfile` はビルド時に Oracle 公式 URL から Instant Client ZIP を
+取得します（リポジトリに Oracle バイナリは含みません）。Instant Client は
+[OTN Development and Distribution License Terms](https://www.oracle.com/downloads/licenses/instant-client-lic.html)
+の下、アプリと束ねる形での無償再配布が許可されています。ビルド済みイメージを
+再配布する場合は同条項に従ってください。
+
 ## 使い方（原版互換のリファレンス）
 
 ```

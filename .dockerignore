@@ -1,0 +1,11 @@
+target/
+dist/
+vendor/
+instantclient_*/
+.gh/
+.home/
+.cache/
+work/
+*.zip
+*.csv
+.git/

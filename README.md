@@ -50,6 +50,20 @@ $ ./target/release/chcsv user/pass@host:1521/SERVICE -h < query.sql
 
 `setup.sh --with-instant-client <ZIP URL>` を使うとダウンロードと解凍も一括でできます。
 
+### 预ビルドバイナリ（RHEL 8 / Oracle Linux 8 系）
+
+[Releases](https://github.com/moriyasujapan/chcsv-rust/releases) に
+`chcsv-ol8-x86_64` を置いています。rockylinux:8 でビルドし、GLIBC 2.28 以上
+（RHEL/OL 8・9・10、および同等の glibc を持つディストリビューション）で動作確認済みです。
+
+```console
+$ sudo dnf install libaio libnsl
+$ export LD_LIBRARY_PATH=/path/to/instantclient_21_21
+$ ./chcsv-ol8-x86_64 user/pass@host:1521/SERVICE -h < query.sql
+```
+
+Instant Client（basic または basic-lite ZIP）は別途 Oracle から入手してください。
+
 ## 使い方（原版互換のリファレンス）
 
 ```
@@ -102,7 +116,25 @@ $ echo "update emp set sal=sal*1.1" | ./chcsv scott/tiger@db   # SELECT 以外�
 
 ## 実測ベンチマーク
 
-環境: Oracle XE 21（Docker、同一ホスト）、BENCH 表 200,000 行（10.7MB）、3 回試行の範囲。
+環境: Oracle XE 21（Docker、同一ホスト）、BENCH 表 200,000 行。原版 C バイナリは
+OL8 コンテナ内で Instant Client + Pro*C 21 によりビルドしたもの（手順は
+[BUILD-ORIGINAL-C-OL8.md](BUILD-ORIGINAL-C-OL8.md)）。CSV 出力は全構成で
+**md5 一致**（10.7MB、バイト単位同一）を確認。
+
+**原版 C バイナリとの直接比較**（200k 行 → 実ディスクへ書き出し、4 構成交互 7 回の平均）:
+
+| 構成 | 平均実時間 | vs 原版 |
+|---|---|---|
+| 原版 C（1 行毎 write のバグ入り） | 1.011 s | — |
+| 原版 C を `==` に修正 | 0.823 s | −18.6% |
+| 本移植 `-b 1`（原版バグ再現） | 0.924 s | −8.6% |
+| **本移植 既定（`-b 100`）** | **0.772 s** | **−23.7%** |
+
+バグ修正済みの C に対しても約 6% 速く、全ラウンドで一貫しました（Jev 有意性 3.8/5）。
+`-o /dev/null` で測ると write が無料になるため順位が揺れます。実ファイル出力で
+測ってください。
+
+参考（本移植のみ、`-o /dev/null`、ローカルでは DB 待ちが支配的）:
 
 | 構成 | 実時間 | write() syscall |
 |---|---|---|

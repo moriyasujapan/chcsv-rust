@@ -14,3 +14,7 @@
 .pull.log
 *.log
 /META-INF/
+
+# local scratch / built binaries (published via GitHub Releases)
+/dist/
+/bench-raw/

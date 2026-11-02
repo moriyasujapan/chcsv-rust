@@ -1,0 +1,54 @@
+name: Release build
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 既存リリースタグ（例 v0.1.0）。空なら最新のリリースに添付
+        required: false
+        default: ''
+
+jobs:
+  linux-x86_64:
+    runs-on: ubuntu-latest
+    # rockylinux:8 コンテナでビルドして glibc 2.28 下限を維持（= 全 RHEL/OL 8+ 互換）
+    container: rockylinux:8
+    steps:
+      - run: dnf -y install git gcc make curl tar gzip which unzip zip
+
+      - uses: actions/checkout@v4
+
+      - run: |
+          curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - run: ./setup.sh
+
+      - run: cargo build --release
+
+      - name: Smoke (usage banner)
+        run: ./target/release/chcsv 2>&1 | grep -q 'Batayan'
+
+      - run: strip target/release/chcsv && cp target/release/chcsv chcsv-linux-x86_64
+
+      - name: Resolve target release
+        id: rel
+        run: |
+          TAG="${{ github.event.release.tag_name || github.event.inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG=$(curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | \
+              grep -m1 '"tag_name"' | cut -d'"' -f4)
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.rel.outputs.tag }}
+          files: chcsv-linux-x86_64
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

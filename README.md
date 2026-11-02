@@ -50,16 +50,18 @@ $ ./target/release/chcsv user/pass@host:1521/SERVICE -h < query.sql
 
 `setup.sh --with-instant-client <ZIP URL>` を使うとダウンロードと解凍も一括でできます。
 
-### 预ビルドバイナリ（RHEL 8 / Oracle Linux 8 系）
+### 预ビルドバイナリ（Linux x86_64 / glibc 2.28 以上）
 
 [Releases](https://github.com/moriyasujapan/chcsv-rust/releases) に
-`chcsv-ol8-x86_64` を置いています。rockylinux:8 でビルドし、GLIBC 2.28 以上
-（RHEL/OL 8・9・10、および同等の glibc を持つディストリビューション）で動作確認済みです。
+`chcsv-linux-x86_64` を置いています。RHEL 8 系（rockylinux:8）でビルドした
+glibc 2.28 以上の Linux x86_64 向けの汎用バイナリです。Oracle Instant Client は
+実行時に `dlopen` で読み込むためリンクしておらず、RHEL/OL 8・9・10 および同等の
+glibc を持つディストリビューション（Ubuntu・Debian 等）で動作します。
 
 ```console
 $ sudo dnf install libaio libnsl
 $ export LD_LIBRARY_PATH=/path/to/instantclient_21_21
-$ ./chcsv-ol8-x86_64 user/pass@host:1521/SERVICE -h < query.sql
+$ ./chcsv-linux-x86_64 user/pass@host:1521/SERVICE -h < query.sql
 ```
 
 Instant Client（basic または basic-lite ZIP）は別途 Oracle から入手してください。

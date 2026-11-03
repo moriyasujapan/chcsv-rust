@@ -33,7 +33,9 @@ jobs:
       - run: cargo build --release
 
       - name: Smoke (usage banner)
-        run: ./target/release/chcsv 2>&1 | grep -q 'Batayan'
+        run: |
+          ./target/release/chcsv >smoke.log 2>&1 || true
+          grep -q 'Batayan' smoke.log
 
       - run: strip target/release/chcsv && cp target/release/chcsv chcsv-linux-x86_64
 
@@ -57,7 +59,9 @@ jobs:
 
       - name: Smoke (usage banner)
         shell: bash
-        run: ./target/release/chcsv.exe 2>&1 | grep -q 'Batayan'
+        run: |
+          ./target/release/chcsv.exe >smoke.log 2>&1 || true
+          grep -q 'Batayan' smoke.log
 
       - shell: bash
         run: cp target/release/chcsv.exe chcsv-windows-x86_64.exe
@@ -79,7 +83,9 @@ jobs:
       - run: cargo build --release
 
       - name: Smoke (usage banner)
-        run: ./target/release/chcsv 2>&1 | grep -q 'Batayan'
+        run: |
+          ./target/release/chcsv >smoke.log 2>&1 || true
+          grep -q 'Batayan' smoke.log
 
       - run: strip target/release/chcsv && cp target/release/chcsv chcsv-macos-x86_64
 
@@ -100,7 +106,9 @@ jobs:
       - run: cargo build --release
 
       - name: Smoke (usage banner)
-        run: ./target/release/chcsv 2>&1 | grep -q 'Batayan'
+        run: |
+          ./target/release/chcsv >smoke.log 2>&1 || true
+          grep -q 'Batayan' smoke.log
 
       - run: strip target/release/chcsv && cp target/release/chcsv chcsv-macos-aarch64
 

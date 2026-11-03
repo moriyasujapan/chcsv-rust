@@ -50,13 +50,20 @@ $ ./target/release/chcsv user/pass@host:1521/SERVICE -h < query.sql
 
 `setup.sh --with-instant-client <ZIP URL>` を使うとダウンロードと解凍も一括でできます。
 
-### 预ビルドバイナリ（Linux x86_64 / glibc 2.28 以上）
+### 预ビルドバイナリ（Linux / Windows / macOS）
 
-[Releases](https://github.com/moriyasujapan/chcsv-rust/releases) に
-`chcsv-linux-x86_64` を置いています。RHEL 8 系（rockylinux:8）でビルドした
-glibc 2.28 以上の Linux x86_64 向けの汎用バイナリです。Oracle Instant Client は
-実行時に `dlopen` で読み込むためリンクしておらず、RHEL/OL 8・9・10 および同等の
-glibc を持つディストリビューション（Ubuntu・Debian 等）で動作します。
+[Releases](https://github.com/moriyasujapan/chcsv-rust/releases) に各 OS 用の
+バイナリを置いています（GitHub Actions のネイティブ runner でビルド）。
+Oracle Instant Client は実行時に `dlopen` / `LoadLibrary` で読み込むため
+リンクしておらず、配布物に同梱していません。Instant Client（basic または
+basic-lite ZIP）は別途 Oracle から入手してください。
+
+| アセット | 動作環境 | 実行時に必要なもの |
+|---|---|---|
+| `chcsv-linux-x86_64` | glibc 2.28 以上の Linux（RHEL/OL 8・9・10、Ubuntu・Debian 等。rockylinux:8 でビルド） | `dnf install libaio libnsl` + Linux 用 Instant Client（`LD_LIBRARY_PATH` に指定） |
+| `chcsv-windows-x86_64.exe` | Windows x64 | [Windows 用 Instant Client](https://www.oracle.com/database/technologies/instant-client/winx64-64-downloads.html)（`oci.dll` を PATH か exe と同じフォルダに） |
+| `chcsv-macos-x86_64` | Intel Mac（Apple Silicon では Rosetta 経由でも可） | [macOS Intel 用 Instant Client](https://www.oracle.com/database/technologies/instant-client/macos-intel-x86-downloads.html) |
+| `chcsv-macos-aarch64` | Apple Silicon（M1 以降）ネイティブ | [macOS ARM64 用 Instant Client](https://www.oracle.com/database/technologies/instant-client/macos-arm64-downloads.html) |
 
 ```console
 $ sudo dnf install libaio libnsl
@@ -64,7 +71,9 @@ $ export LD_LIBRARY_PATH=/path/to/instantclient_21_21
 $ ./chcsv-linux-x86_64 user/pass@host:1521/SERVICE -h < query.sql
 ```
 
-Instant Client（basic または basic-lite ZIP）は別途 Oracle から入手してください。
+macOS では `export DYLD_LIBRARY_PATH=/path/to/instantclient_XX` を、Windows では
+Instant Client フォルダを PATH に追加するか `oci.dll` を exe と同じ場所において
+から実行します。
 
 ### Docker / docker compose で使う
 

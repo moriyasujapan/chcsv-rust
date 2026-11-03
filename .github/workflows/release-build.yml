@@ -9,11 +9,14 @@ on:
         required: false
         default: ''
 
+# ビルド対象: Linux x86_64 / Windows x86_64 / macOS x86_64 / macOS aarch64。
+# Oracle クライアントライブラリは実行時に dlopen/LoadLibrary するため、
+# 各 OS のネイティブ runner でそのままビルドできる。
+# Instant Client はビルドにも配布物にも同梱しない（ライセンス上各自入手）。
+
 jobs:
   linux-x86_64:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write   # リリースアセットの添付/更新に必要
     # rockylinux:8 コンテナでビルドして glibc 2.28 下限を維持（= 全 RHEL/OL 8+ 互換）
     container: rockylinux:8
     steps:
@@ -34,6 +37,84 @@ jobs:
 
       - run: strip target/release/chcsv && cp target/release/chcsv chcsv-linux-x86_64
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-linux-x86_64
+          path: chcsv-linux-x86_64
+
+  windows-x86_64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable   # MSVC（デフォルト）。cc crate が VS を自動検出
+
+      - name: Fetch ODPI-C
+        shell: bash
+        run: ./setup.sh
+
+      - run: cargo build --release
+
+      - name: Smoke (usage banner)
+        shell: bash
+        run: ./target/release/chcsv.exe 2>&1 | grep -q 'Batayan'
+
+      - shell: bash
+        run: cp target/release/chcsv.exe chcsv-windows-x86_64.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-windows-x86_64
+          path: chcsv-windows-x86_64.exe
+
+  macos-x86_64:
+    runs-on: macos-13   # Intel ネイティブ runner
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - run: ./setup.sh
+
+      - run: cargo build --release
+
+      - name: Smoke (usage banner)
+        run: ./target/release/chcsv 2>&1 | grep -q 'Batayan'
+
+      - run: strip target/release/chcsv && cp target/release/chcsv chcsv-macos-x86_64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-macos-x86_64
+          path: chcsv-macos-x86_64
+
+  macos-aarch64:
+    runs-on: macos-latest   # Apple Silicon ネイティブ runner
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - run: ./setup.sh
+
+      - run: cargo build --release
+
+      - name: Smoke (usage banner)
+        run: ./target/release/chcsv 2>&1 | grep -q 'Batayan'
+
+      - run: strip target/release/chcsv && cp target/release/chcsv chcsv-macos-aarch64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-macos-aarch64
+          path: chcsv-macos-aarch64
+
+  attach:
+    needs: [linux-x86_64, windows-x86_64, macos-x86_64, macos-aarch64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # リリースアセットの添付/更新に必要
+    steps:
       - name: Resolve target release
         id: rel
         run: |
@@ -47,10 +128,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: 'bin-*'
+          merge-multiple: true
+          path: assets
+
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.rel.outputs.tag }}
-          files: chcsv-linux-x86_64
+          files: |
+            assets/chcsv-linux-x86_64
+            assets/chcsv-windows-x86_64.exe
+            assets/chcsv-macos-x86_64
+            assets/chcsv-macos-aarch64
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
